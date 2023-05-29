@@ -25,7 +25,7 @@ resources:
 # -- Pod priorityClassName
 priorityClassName: ""
 # -- Node labels for pod assignment
-nodeSelector: {}
+nodeSelector: {"ai.tensorchord.node-type":"cache"}
 # -- Pod terminationGracePeriodSeconds
 terminationGracePeriodSeconds:
 # -- List of node taints to tolerate
@@ -46,19 +46,3 @@ dragonfly:
     headers:
       "X-Dragonfly-Registry": "https://index.docker.io"
     ping_url: "http://127.0.0.1:40901/server/ping"
-
-
-# -- [Experimental] Container runtime support
-# Choose special container runtime in Kubernetes.
-# Support: Containerd, Docker, CRI-O
-containerRuntime:
-  # -- The image name of init container, just to update container runtime configuration file
-  initContainerImage: ghcr.io/liubin/toml-cli:v0.0.7
-
-  # -- [Experimental] Containerd support
-  containerd:
-    # -- Enable containerd support
-    # Inject nydus-snapshotter config into ${containerRuntime.containerd.configFile},
-    enable: true
-    # -- Custom config path directory, default is /etc/containerd/config.toml
-    configFile: "/etc/containerd/config.toml"

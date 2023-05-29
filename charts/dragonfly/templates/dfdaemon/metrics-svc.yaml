@@ -23,6 +23,10 @@ spec:
     name: http-metrics
     targetPort: 8000
     protocol: TCP
+  - port: 9090
+    name: pprof
+    targetPort: 9090
+    protocol: TCP
   selector:
     app: {{ template "dragonfly.fullname" . }}
     release: {{ .Release.Name }}

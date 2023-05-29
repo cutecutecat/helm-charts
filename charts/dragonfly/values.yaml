@@ -138,7 +138,7 @@ scheduler:
   # -- Override scheduler fullname
   fullnameOverride: ""
   # -- Number of Pods to launch
-  replicas: 3
+  replicas: 1
   # -- Image repository
   image: dragonflyoss/scheduler
   # -- Image tag
@@ -308,7 +308,7 @@ scheduler:
       # -- enableIPv6 enables ipv6.
       enableIPv6: false
     # -- Console shows log on console
-    console: false
+    console: true
     # -- Whether to enable debug level logger and enable pprof
     verbose: false
     # -- Listen port for pprof, only valid when the verbose option is true
@@ -510,13 +510,14 @@ seedPeer:
     requests:
       cpu: "0"
       memory: "0"
+      ephemeral-storage: "200Gi"
     limits:
-      cpu: "2"
+      cpu: "6"
       memory: "4Gi"
   # -- Pod priorityClassName
   priorityClassName: ""
   # -- Node labels for pod assignment
-  nodeSelector: {}
+  nodeSelector: {"ai.tensorchord.node-type":"cache", "env":"modelz"}
   # -- Pod terminationGracePeriodSeconds
   terminationGracePeriodSeconds:
   # -- List of node taints to tolerate
@@ -559,7 +560,7 @@ seedPeer:
     ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
     ##   GKE, AWS & OpenStack)
     ##
-    # storageClass: "-"
+    # storageClass: "premium-rwo"
   config:
     # -- Daemon alive time, when sets 0s, daemon will not auto exit, it is useful for longtime running
     aliveTime: 0s
@@ -578,11 +579,11 @@ seedPeer:
     # -- Plugin directory
     pluginDir: ""
     # -- Daemon data storage directory
-    dataDir: "/var/lib/dragonfly"
+    dataDir: "/mnt/stateful_partition/kube-ephemeral-ssd/dragonfly"
     # -- Console shows log on console
-    console: false
+    console: true
     # -- Whether to enable debug level logger and enable pprof
-    verbose: false
+    verbose: true
     # -- Listen port for pprof, only valid when the verbose option is true
     # default is -1. If it is 0, pprof will use a random port.
     pprofPort: -1
@@ -622,9 +623,9 @@ seedPeer:
       disableAutoBackSource: false
     download:
       # -- Total download limit per second
-      totalRateLimit: 2048Mi
+      totalRateLimit: 64Gi
       # -- Per peer task limit per second
-      perPeerRateLimit: 1024Mi
+      perPeerRateLimit: 64Gi
       # -- Calculate digest, when only pull images, can be false to save cpu and memory
       calculateDigest: true
       # -- When request data with range header, prefetch data not in range
@@ -647,7 +648,7 @@ seedPeer:
           port: 65000
     upload:
       # -- Upload limit per second
-      rateLimit: 2048Mi
+      RateLimit: 64Gi
       # -- Upload grpc security option
       security:
         insecure: true
@@ -677,7 +678,7 @@ seedPeer:
     storage:
       # -- Task data expire time
       # when there is no access to a task data, this task will be gc.
-      taskExpireTime: 6h
+      taskExpireTime: 0
       # -- Storage strategy when process task data
       # io.d7y.storage.v2.simple : download file to data directory first, then copy to output path, this is default action
       #                           the download file in date directory will be the peer data for uploading to other peers
@@ -686,7 +687,7 @@ seedPeer:
       #                            the output file with postfix will be the peer data for uploading to other peers
       #                            when user delete or change this file, this peer data will be corrupted
       # default is io.d7y.storage.v2.advance
-      strategy: io.d7y.storage.v2.simple
+      strategy: io.d7y.storage.v2.advance
       # -- Set to ture for reusing underlying storage for same task id
       multiplex: true
       # -- Disk GC Threshold Percent, when the disk usage is above 90%, start to gc the oldest tasks
@@ -853,13 +854,10 @@ dfdaemon:
     requests:
       cpu: "0"
       memory: "0"
-    limits:
-      cpu: "2"
-      memory: "2Gi"
   # -- Pod priorityClassName
   priorityClassName: ""
   # -- Node labels for pod assignment
-  nodeSelector: {}
+  nodeSelector: {"ai.tensorchord.node-type":"cache"}
   # -- Pod terminationGracePeriodSeconds
   terminationGracePeriodSeconds:
   # -- List of node taints to tolerate
@@ -901,7 +899,7 @@ dfdaemon:
     # -- Daemon alive time, when sets 0s, daemon will not auto exit, it is useful for longtime running
     aliveTime: 0s
     # -- Daemon gc task running interval
-    gcInterval: 1m0s
+    gcInterval: 10m
     # -- When daemon exit, keep peer task data or not
     # it is usefully when upgrade daemon service, all local cache will be saved
     # default is false
@@ -917,9 +915,9 @@ dfdaemon:
     # -- Daemon data storage directory
     dataDir: "/var/lib/dragonfly"
     # -- Console shows log on console
-    console: false
+    console: true
     # -- Whether to enable debug level logger and enable pprof
-    verbose: false
+    verbose: true
     # -- Listen port for pprof, only valid when the verbose option is true
     # default is -1. If it is 0, pprof will use a random port.
     pprofPort: -1
@@ -959,9 +957,9 @@ dfdaemon:
       disableAutoBackSource: false
     download:
       # -- Total download limit per second
-      totalRateLimit: 1024Mi
+      totalRateLimit: 64Gi
       # -- Per peer task limit per second
-      perPeerRateLimit: 512Mi
+      perPeerRateLimit: 64Gi
       # -- Calculate digest, when only pull images, can be false to save cpu and memory
       calculateDigest: true
       # -- When request data with range header, prefetch data not in range
@@ -984,7 +982,7 @@ dfdaemon:
           port: 65000
     upload:
       # -- Upload limit per second
-      rateLimit: 1024Mi
+      RateLimit: 64Gi
       # -- Upload grpc security option
       security:
         insecure: true
@@ -1014,7 +1012,7 @@ dfdaemon:
     storage:
       # -- Task data expire time
       # when there is no access to a task data, this task will be gc.
-      taskExpireTime: 6h
+      taskExpireTime: 0
       # -- Storage strategy when process task data
       # io.d7y.storage.v2.simple : download file to data directory first, then copy to output path, this is default action
       #                           the download file in date directory will be the peer data for uploading to other peers
@@ -1023,7 +1021,7 @@ dfdaemon:
       #                            the output file with postfix will be the peer data for uploading to other peers
       #                            when user delete or change this file, this peer data will be corrupted
       # default is io.d7y.storage.v2.advance
-      strategy: io.d7y.storage.v2.simple
+      strategy: io.d7y.storage.v2.advance
       # -- Set to ture for reusing underlying storage for same task id
       multiplex: true
       # -- Disk GC Threshold
@@ -1172,7 +1170,7 @@ manager:
   # -- Override manager fullname
   fullnameOverride: ""
   # -- Number of Pods to launch
-  replicas: 3
+  replicas: 1
   # -- Image repository
   image: dragonflyoss/manager
   # -- Image tag

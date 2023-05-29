@@ -38,7 +38,6 @@ spec:
 {{ toYaml .Values.nodeSelector | indent 8 }}
       {{- end }}
       hostNetwork: {{ .Values.hostNetwork }}
-      hostPID: {{ .Values.containerRuntime.containerd.enable }}
       {{- if .Values.hostNetwork }}
       dnsPolicy: "ClusterFirstWithHostNet"
       {{- end }}
@@ -66,15 +65,6 @@ spec:
           value: "false"
         resources:
 {{ toYaml .Values.resources | indent 12 }}
-        lifecycle:
-          postStart:
-            exec:
-              command:
-              - "/bin/sh"
-              - "-c"
-              - |
-                # currently, without host pid in container, we can not nsenter with pid and can not invoke systemctl correctly.
-                nsenter -t 1 -m systemctl -- restart containerd.service
         {{- if .Values.args }}
         args:
 {{ toYaml .Values.args | indent 12 }}
@@ -94,42 +84,6 @@ spec:
         securityContext:
           privileged: true
 
-      initContainers:
-      {{- if .Values.containerRuntime.containerd.enable }}
-      - name: update-containerd
-        image: "{{ .Values.containerRuntime.initContainerImage }}"
-        imagePullPolicy: {{ .Values.pullPolicy | quote }}
-        resources:
-{{ toYaml .Values.resources | indent 12 }}
-        command:
-        - /bin/sh
-        - -cx
-        - |-
-          etcContainerd={{ .Values.containerRuntime.containerd.configFile }}
-
-          toml check $etcContainerd proxy_plugins.nydus
-          if [ $? -eq 0 ]; then
-            echo "nydus snapshotter has already configured."
-            exit 0
-          fi
-
-          toml set --overwrite $etcContainerd plugins.\"io.containerd.grpc.v1.cri\".containerd.discard_unpacked_layers false
-          toml set --overwrite $etcContainerd plugins.\"io.containerd.grpc.v1.cri\".containerd.disable_snapshot_annotations false
-          toml set --overwrite $etcContainerd plugins.\"io.containerd.grpc.v1.cri\".containerd.snapshotter nydus
-
-          # toml command not support to set block, so just use cat command.
-          cat << EOF >> $etcContainerd
-          [proxy_plugins]
-            [proxy_plugins.nydus]
-              type = "snapshot"
-              address = "/run/containerd-nydus/containerd-nydus-grpc.sock"
-          EOF
-
-        volumeMounts:
-        - name: containerd-conf
-          mountPath: {{ .Values.containerRuntime.containerd.configFile }}
-      {{- end }}
-
       volumes:
       - name: config
         configMap:
@@ -145,8 +99,3 @@ spec:
       - name: fuse
         hostPath:
           path: /dev/fuse
-      {{- if .Values.containerRuntime.containerd.enable }}
-      - name: containerd-conf
-        hostPath:
-          path: {{ .Values.containerRuntime.containerd.configFile }}
-      {{- end }}
